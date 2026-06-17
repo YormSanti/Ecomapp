@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'first_screen.dart';
+import 'main_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -41,10 +41,7 @@ class _MyAppState extends State<MyApp> {
         ),
         useMaterial3: true,
       ),
-      home: FirstScreen(
-        isDarkMode: _isDarkMode,
-        onToggleTheme: _toggleTheme,
-      ),
+      home: MainScreen(isDarkMode: _isDarkMode, onToggleTheme: _toggleTheme),
     );
   }
 }

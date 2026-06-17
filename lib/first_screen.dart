@@ -10,18 +10,22 @@ class FirstScreen extends StatefulWidget {
   const FirstScreen({
     super.key,
     required this.isDarkMode,
+    required this.gridViewNotifier,
     required this.onToggleTheme,
+    required this.onToggleGridStyle,
   });
 
   final bool isDarkMode;
+  final ValueNotifier<bool> gridViewNotifier;
   final VoidCallback onToggleTheme;
+  final VoidCallback onToggleGridStyle;
 
   @override
   State<FirstScreen> createState() => _FirstScreenState();
 }
 
 class _FirstScreenState extends State<FirstScreen> {
-  bool _isGridView = true;
+  bool get _isGridView => widget.gridViewNotifier.value;
 
   Future<List<ProductModel>> _getApi() async {
     // Future<List<Map<String, dynamic>>> _getApi() async {
@@ -157,12 +161,6 @@ class _FirstScreenState extends State<FirstScreen> {
     );
   }
 
-  void _toggleProductView() {
-    setState(() {
-      _isGridView = !_isGridView;
-    });
-  }
-
   Widget _productViewIcon() {
     return Icon(_isGridView ? Icons.list : Icons.grid_view_rounded);
   }
@@ -276,27 +274,34 @@ class _FirstScreenState extends State<FirstScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.pink,
-        foregroundColor: Colors.white,
-        centerTitle: false,
-        titleSpacing: 24,
-        title: const Text('First Screen'),
-        actions: [
-          IconButton(
-            onPressed: _toggleProductView,
-            tooltip: _productViewTooltip(),
-            icon: _productViewIcon(),
+    return ValueListenableBuilder<bool>(
+      valueListenable: widget.gridViewNotifier,
+      builder: (context, _, _) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.pink,
+            foregroundColor: Colors.white,
+            centerTitle: false,
+            titleSpacing: 24,
+            title: const Text('First Screen'),
+            actions: [
+              IconButton(
+                onPressed: widget.onToggleGridStyle,
+                tooltip: _productViewTooltip(),
+                icon: _productViewIcon(),
+              ),
+              IconButton(
+                onPressed: widget.onToggleTheme,
+                tooltip: widget.isDarkMode ? 'Light mode' : 'Dark mode',
+                icon: Icon(
+                  widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            onPressed: widget.onToggleTheme,
-            tooltip: widget.isDarkMode ? 'Light mode' : 'Dark mode',
-            icon: Icon(widget.isDarkMode ? Icons.light_mode : Icons.dark_mode),
-          ),
-        ],
-      ),
-      body: _buildBody(),
+          body: _buildBody(),
+        );
+      },
     );
   }
 }
