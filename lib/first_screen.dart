@@ -19,6 +19,8 @@ class FirstScreen extends StatefulWidget {
 }
 
 class _FirstScreenState extends State<FirstScreen> {
+  bool _isGridView = true;
+
   Future<List<ProductModel>> _getApi() async {
     // Future<List<Map<String, dynamic>>> _getApi() async {
     try {
@@ -73,7 +75,7 @@ class _FirstScreenState extends State<FirstScreen> {
             }
 
             if (snapshot.connectionState == ConnectionState.done) {
-              return _buildListView(snapshot.data);
+              return _buildProductView(snapshot.data);
             }
 
             return ListView(
@@ -91,84 +93,148 @@ class _FirstScreenState extends State<FirstScreen> {
     );
   }
 
-  Widget _buildListView(List<ProductModel>? items) {
-    if (items == null) {
+  Widget _buildProductView(List<ProductModel>? items) {
+    if (items == null || items.isEmpty) {
       return const Icon(Icons.list);
     }
 
-    double screenWidth = MediaQuery.of(context).size.width;
+    return _isGridView ? _buildGridView(items) : _buildListView(items);
+  }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth > 1200 ? (screenWidth - 1200) / 2 : 8,
-        vertical: 8,
+  Widget _buildGridView(List<ProductModel> items) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(10),
+      physics: const BouncingScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 230,
+        mainAxisExtent: 236,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 10,
       ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return _ProductCard(item: items[index]);
+      },
+    );
+  }
+
+  Widget _buildListView(List<ProductModel> items) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(10),
       physics: const BouncingScrollPhysics(),
       itemCount: items.length,
       itemBuilder: (context, index) {
-        final item = items[index];
-
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: item.images[0],
-                  placeholder: (_, _) => Container(color: Colors.grey),
-                  errorWidget: (_, _, _) {
-                    return Container(color: Colors.grey.shade800);
-                  },
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'USD ${item.price.toStringAsFixed(2)}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        item.description,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
+        return _ProductListTile(item: items[index]);
       },
+    );
+  }
+
+  void _toggleProductView() {
+    setState(() {
+      _isGridView = !_isGridView;
+    });
+  }
+
+  Widget _productViewIcon() {
+    return Icon(_isGridView ? Icons.list : Icons.grid_view_rounded);
+  }
+
+  String _productViewTooltip() {
+    return _isGridView ? 'List view' : 'Grid view';
+  }
+
+  static String _imageUrl(ProductModel item) {
+    return item.images.isNotEmpty ? item.images.first : '';
+  }
+
+  static String _priceText(ProductModel item) {
+    return 'USD ${item.price.toStringAsFixed(2)}';
+  }
+
+  static Widget _imagePlaceholder(Color color) {
+    return ColoredBox(color: color);
+  }
+
+  static Widget _imageError() {
+    return ColoredBox(color: Colors.grey.shade500);
+  }
+
+  static Widget _productImage({
+    required ProductModel item,
+    required BoxFit fit,
+    double? width,
+    double? height,
+    Color placeholderColor = const Color(0xffdedede),
+  }) {
+    return CachedNetworkImage(
+      imageUrl: _imageUrl(item),
+      placeholder: (_, _) => _imagePlaceholder(placeholderColor),
+      errorWidget: (_, _, _) => _imageError(),
+      fit: fit,
+      width: width,
+      height: height,
+    );
+  }
+
+  static Widget _productTitle(ProductModel item, {TextAlign? textAlign}) {
+    return Text(
+      item.title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: textAlign,
+      style: const TextStyle(fontSize: 12),
+    );
+  }
+
+  static Widget _productPrice(ProductModel item) {
+    return Text(
+      _priceText(item),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 12),
+    );
+  }
+
+  static BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: const Color(0xfffdf1f7),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: const Color(0xfff0dce8)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 4,
+          offset: const Offset(0, 1),
+        ),
+      ],
+    );
+  }
+
+  static Widget _clipCardImage(Widget child) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+      child: child,
+    );
+  }
+
+  static Widget _buildCardContent(ProductModel item) {
+    return Column(
+      children: [
+        _clipCardImage(
+          SizedBox(
+            height: 160,
+            width: double.infinity,
+            child: _productImage(item: item, fit: BoxFit.cover),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: _productTitle(item, textAlign: TextAlign.center),
+        ),
+        const SizedBox(height: 14),
+        _productPrice(item),
+      ],
     );
   }
 
@@ -178,9 +244,15 @@ class _FirstScreenState extends State<FirstScreen> {
       appBar: AppBar(
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
-        centerTitle: true,
+        centerTitle: false,
+        titleSpacing: 24,
         title: const Text('First Screen'),
         actions: [
+          IconButton(
+            onPressed: _toggleProductView,
+            tooltip: _productViewTooltip(),
+            icon: _productViewIcon(),
+          ),
           IconButton(
             onPressed: widget.onToggleTheme,
             tooltip: widget.isDarkMode ? 'Light mode' : 'Dark mode',
@@ -189,6 +261,78 @@ class _FirstScreenState extends State<FirstScreen> {
         ],
       ),
       body: _buildBody(),
+    );
+  }
+}
+
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({required this.item});
+
+  final ProductModel item;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: _FirstScreenState._cardDecoration(),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: _FirstScreenState._buildCardContent(item),
+      ),
+    );
+  }
+}
+
+class _ProductListTile extends StatelessWidget {
+  const _ProductListTile({required this.item});
+
+  final ProductModel item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 132,
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: _FirstScreenState._cardDecoration(),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.horizontal(
+              left: Radius.circular(8),
+            ),
+            child: _FirstScreenState._productImage(
+              item: item,
+              fit: BoxFit.cover,
+              width: 132,
+              height: 132,
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _FirstScreenState._productTitle(item),
+                  const SizedBox(height: 14),
+                  _FirstScreenState._productPrice(item),
+                  const SizedBox(height: 14),
+                  Expanded(
+                    child: Text(
+                      item.description,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
