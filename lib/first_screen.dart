@@ -1,7 +1,9 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:skeletonizer/skeletonizer.dart';
 
+import 'detail_screen.dart';
 import 'product_model.dart';
 
 class FirstScreen extends StatefulWidget {
@@ -78,15 +80,41 @@ class _FirstScreenState extends State<FirstScreen> {
               return _buildProductView(snapshot.data);
             }
 
-            return ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: [
-                SizedBox(
-                  height: MediaQuery.sizeOf(context).height * 0.7,
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-              ],
-            );
+            return _buildSkeletonizer();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonizer() {
+    bool isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    double screenWidth = MediaQuery.of(context).size.width;
+
+    return ColoredBox(
+      color: const Color(0xff130d0f),
+      child: Skeletonizer(
+        effect: _skeletonEffect(),
+        child: GridView.builder(
+          padding: EdgeInsets.symmetric(
+            horizontal: screenWidth > 1200 ? (screenWidth - 1200) / 2 : 8,
+            vertical: 8,
+          ),
+          physics: const AlwaysScrollableScrollPhysics(),
+          itemCount: 20,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: _isGridView ? (isLandscape ? 4 : 2) : 1,
+            childAspectRatio: _isGridView ? 3 / 5 : 4 / 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemBuilder: (context, index) {
+            if (_isGridView) {
+              return const _SkeletonProductCard();
+            }
+
+            return const _SkeletonListTile();
           },
         ),
       ),
@@ -238,11 +266,19 @@ class _FirstScreenState extends State<FirstScreen> {
     );
   }
 
+  static ShimmerEffect _skeletonEffect() {
+    return const ShimmerEffect(
+      baseColor: Color(0xff333333),
+      highlightColor: Color(0xff4a4a4a),
+      duration: Duration(milliseconds: 1200),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.purple,
+        backgroundColor: Colors.pink,
         foregroundColor: Colors.white,
         centerTitle: false,
         titleSpacing: 24,
@@ -272,11 +308,19 @@ class _ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: _FirstScreenState._cardDecoration(),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: _FirstScreenState._buildCardContent(item),
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => DetailScreen(item: item)));
+      },
+      child: DecoratedBox(
+        decoration: _FirstScreenState._cardDecoration(),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: _FirstScreenState._buildCardContent(item),
+        ),
       ),
     );
   }
@@ -289,49 +333,151 @@ class _ProductListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 132,
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: _FirstScreenState._cardDecoration(),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.horizontal(
-              left: Radius.circular(8),
-            ),
-            child: _FirstScreenState._productImage(
-              item: item,
-              fit: BoxFit.cover,
-              width: 132,
-              height: 132,
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _FirstScreenState._productTitle(item),
-                  const SizedBox(height: 14),
-                  _FirstScreenState._productPrice(item),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: Text(
-                      item.description,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: Theme.of(context).textTheme.bodySmall?.color,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () {
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => DetailScreen(item: item)));
+      },
+      child: Container(
+        height: 132,
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: _FirstScreenState._cardDecoration(),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(8),
+              ),
+              child: _FirstScreenState._productImage(
+                item: item,
+                fit: BoxFit.cover,
+                width: 132,
+                height: 132,
               ),
             ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _FirstScreenState._productTitle(item),
+                    const SizedBox(height: 14),
+                    _FirstScreenState._productPrice(item),
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: Text(
+                        item.description,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkeletonProductCard extends StatelessWidget {
+  const _SkeletonProductCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      color: const Color(0xff211719),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      child: const Padding(
+        padding: EdgeInsets.all(8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Bone(
+                width: double.infinity,
+                borderRadius: BorderRadius.all(Radius.circular(4)),
+              ),
+            ),
+            SizedBox(height: 12),
+            Bone(
+              height: 8,
+              width: double.infinity,
+              borderRadius: BorderRadius.all(Radius.circular(4)),
+            ),
+            SizedBox(height: 14),
+            Bone(
+              height: 8,
+              width: 104,
+              borderRadius: BorderRadius.all(Radius.circular(4)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkeletonListTile extends StatelessWidget {
+  const _SkeletonListTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: const Color(0xff211719),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+      child: const SizedBox(
+        height: 132,
+        child: Padding(
+          padding: EdgeInsets.all(8),
+          child: Row(
+            children: [
+              Bone.square(
+                size: 116,
+                borderRadius: BorderRadius.all(Radius.circular(4)),
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Bone(
+                      height: 8,
+                      width: double.infinity,
+                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                    ),
+                    SizedBox(height: 14),
+                    Bone(
+                      height: 8,
+                      width: 120,
+                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                    ),
+                    SizedBox(height: 14),
+                    Bone(
+                      height: 8,
+                      width: double.infinity,
+                      borderRadius: BorderRadius.all(Radius.circular(4)),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
